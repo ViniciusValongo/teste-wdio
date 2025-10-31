@@ -1,0 +1,195 @@
+# ========================================
+# Pipeline CI/CD - Testes Mobile Android
+# WebdriverIO + Appium + Allure
+# ========================================
+
+stages:
+  - test
+  - report
+
+variables:
+  # Versões das ferramentas
+  ANDROID_SDK_VERSION: "33"
+  NODE_VERSION: "18"
+  JAVA_VERSION: "11"
+  
+  # Caminhos
+  ANDROID_HOME: "/opt/android-sdk"
+  ANDROID_SDK_ROOT: "/opt/android-sdk"
+  
+  # Configurações
+  APPIUM_PORT: "4723"
+  DEVICE_NAME: "emulator-5554"
+
+# ========================================
+# Template para Jobs de Teste
+# ========================================
+.test_template: &test_template
+  image: node:${NODE_VERSION}
+  before_script:
+    # Instala Java
+    - apt-get update -qq
+    - apt-get install -y openjdk-${JAVA_VERSION}-jdk wget unzip
+    - export JAVA_HOME=/usr/lib/jvm/java-${JAVA_VERSION}-openjdk-amd64
+    
+    # Instala Android SDK
+    - mkdir -p ${ANDROID_HOME}/cmdline-tools
+    - wget -q https://dl.google.com/android/repository/commandlinetools-linux-9477386_latest.zip
+    - unzip -q commandlinetools-linux-9477386_latest.zip -d ${ANDROID_HOME}/cmdline-tools
+    - mv ${ANDROID_HOME}/cmdline-tools/cmdline-tools ${ANDROID_HOME}/cmdline-tools/latest
+    
+    # Aceita licenças do Android SDK
+    - yes | ${ANDROID_HOME}/cmdline-tools/latest/bin/sdkmanager --licenses || true
+    
+    # Instala componentes necessários
+    - ${ANDROID_HOME}/cmdline-tools/latest/bin/sdkmanager "platform-tools" "platforms;android-${ANDROID_SDK_VERSION}" "emulator" "system-images;android-${ANDROID_SDK_VERSION};google_apis;x86_64"
+    
+    # Instala dependências do Node.js
+    - npm ci
+    
+    # Instala Appium globalmente
+    - npm install -g appium@next
+    - appium driver install uiautomator2
+    
+    # Cria e inicia emulador Android
+    - echo no | ${ANDROID_HOME}/cmdline-tools/latest/bin/avdmanager create avd -n test -k "system-images;android-${ANDROID_SDK_VERSION};google_apis;x86_64" --force
+    - ${ANDROID_HOME}/emulator/emulator -avd test -no-window -no-audio -no-boot-anim -gpu swiftshader_indirect &
+    - ${ANDROID_HOME}/platform-tools/adb wait-for-device shell 'while [[ -z $(getprop sys.boot_completed) ]]; do sleep 1; done;'
+    
+    # Inicia Appium em background
+    - appium --port ${APPIUM_PORT} --allow-insecure chromedriver_autodownload &
+    - sleep 10
+    
+  after_script:
+    # Mata processos
+    - pkill -f appium || true
+    - pkill -f emulator || true
+
+# ========================================
+# Job: Executar Testes
+# ========================================
+test:mobile:
+  <<: *test_template
+  stage: test
+  script:
+    - echo "🚀 Iniciando execução dos testes mobile..."
+    - npm test || true
+    
+  artifacts:
+    when: always
+    paths:
+      - allure-results/
+      - allure-report/
+    expire_in: 30 days
+    
+  only:
+    - merge_requests
+    - main
+    - develop
+  
+  tags:
+    - docker
+    - linux
+
+# ========================================
+# Job: Gerar Relatório Allure
+# ========================================
+report:allure:
+  stage: report
+  image: node:${NODE_VERSION}
+  before_script:
+    - npm install -g allure-commandline
+  script:
+    - echo "📊 Gerando relatório Allure..."
+    - allure generate allure-results --clean -o allure-report
+    - echo "✅ Relatório gerado com sucesso!"
+    
+  artifacts:
+    when: always
+    paths:
+      - allure-report/
+    expire_in: 30 days
+    
+  dependencies:
+    - test:mobile
+    
+  only:
+    - merge_requests
+    - main
+    - develop
+    
+  tags:
+    - docker
+
+# ========================================
+# Job: Deploy do Relatório (GitLab Pages)
+# ========================================
+pages:
+  stage: report
+  image: alpine:latest
+  script:
+    - echo "📦 Preparando deploy do relatório..."
+    - mv allure-report public
+    
+  artifacts:
+    paths:
+      - public
+    expire_in: 30 days
+    
+  dependencies:
+    - report:allure
+    
+  only:
+    - main
+    
+  tags:
+    - docker
+
+# ========================================
+# Job: Testes em Merge Requests
+# ========================================
+test:merge-request:
+  <<: *test_template
+  stage: test
+  script:
+    - echo "🔍 Executando testes no Merge Request..."
+    - npm test
+    
+  artifacts:
+    when: always
+    paths:
+      - allure-results/
+    reports:
+      junit: allure-results/*.xml
+    expire_in: 7 days
+    
+  only:
+    - merge_requests
+    
+  tags:
+    - docker
+    - linux
+
+# ========================================
+# Job: Testes Noturnos (Scheduled)
+# ========================================
+test:nightly:
+  <<: *test_template
+  stage: test
+  script:
+    - echo "🌙 Executando testes noturnos completos..."
+    - npm test
+    
+  artifacts:
+    when: always
+    paths:
+      - allure-results/
+      - allure-report/
+    expire_in: 90 days
+    
+  only:
+    - schedules
+    
+  tags:
+    - docker
+    - linux

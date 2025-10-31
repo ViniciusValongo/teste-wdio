@@ -1,0 +1,50 @@
+[
+  {
+    "name": "Timeout Errors",
+    "description": "Erros causados por timeout durante a execução",
+    "matchedStatuses": ["broken"],
+    "messageRegex": ".*(timeout|timed out).*"
+  },
+  {
+    "name": "Element Not Found",
+    "description": "Erros causados por elementos não encontrados na tela",
+    "matchedStatuses": ["broken"],
+    "messageRegex": ".*(element.*not.*found|cannot find element).*"
+  },
+  {
+    "name": "Assertion Errors",
+    "description": "Falhas em asserções de teste",
+    "matchedStatuses": ["failed"],
+    "messageRegex": ".*(AssertionError|expected|to equal|to include).*"
+  },
+  {
+    "name": "Network Errors",
+    "description": "Erros relacionados à rede ou conectividade",
+    "matchedStatuses": ["broken"],
+    "messageRegex": ".*(network|connection|ECONNREFUSED|ETIMEDOUT).*"
+  },
+  {
+    "name": "Application Crashes",
+    "description": "Crashes ou erros críticos da aplicação",
+    "matchedStatuses": ["broken"],
+    "messageRegex": ".*(crash|fatal|application.*stopped).*"
+  },
+  {
+    "name": "Invalid Credentials",
+    "description": "Erros de autenticação ou credenciais inválidas",
+    "matchedStatuses": ["failed"],
+    "messageRegex": ".*(invalid.*credentials|authentication.*failed|wrong.*password).*"
+  },
+  {
+    "name": "Validation Errors",
+    "description": "Erros de validação de campos ou formulários",
+    "matchedStatuses": ["failed"],
+    "messageRegex": ".*(validation|invalid.*format|required.*field).*"
+  },
+  {
+    "name": "Infrastructure Issues",
+    "description": "Problemas de infraestrutura (Appium, emulador, etc)",
+    "matchedStatuses": ["broken"],
+    "messageRegex": ".*(Appium|emulator|adb|driver).*"
+  }
+]
