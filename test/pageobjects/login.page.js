@@ -122,15 +122,6 @@ class LoginPage {
         return await BasePage.getText(this.successMessage);
     }
 
-    /**
-     * Obtém a mensagem de erro
-     * @returns {Promise<string>}
-     */
-    async getErrorMessage() {
-        await BasePage.waitForElement(this.errorMessage);
-        return await BasePage.getText(this.errorMessage);
-    }
-
 
     async closeAlert() {
         await BasePage.clickElement(this.alertOkButton);
@@ -173,14 +164,6 @@ class LoginPage {
         } catch (error) {
             return false;
         }
-    }
-
-    /**
-     * Verifica se está na tela de Login
-     * @returns {Promise<boolean>}
-     */
-    async isOnLoginPage() {
-        return await BasePage.isElementVisible(this.loginContainer);
     }
 }
 

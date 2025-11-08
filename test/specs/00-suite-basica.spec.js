@@ -11,7 +11,6 @@ describe('Suite Básica - 10 Testes Principais', () => {
     // ======================
     describe('Login', () => {
         beforeEach(async () => {
-            await driver.pause(1000);
             await HomePage.returnToHome();
             await HomePage.waitForHomeScreen();
         });
@@ -32,10 +31,7 @@ describe('Suite Básica - 10 Testes Principais', () => {
             
             await LoginPage.waitForLoginScreen();
             await LoginPage.switchToLogin();
-            await BasePage.setText(LoginPage.loginEmailInput, 'email-invalido');
-            await BasePage.setText(LoginPage.loginPasswordInput, 'Test@123');
-            await BasePage.hideKeyboard();
-            await BasePage.clickElement(LoginPage.loginButton);
+            await LoginPage.doLogin('email-invalido', 'Test@123');
             
             // Verifica se a mensagem de validação inline está visível
             const isValidationVisible = await LoginPage.isEmailValidationVisible();
@@ -60,7 +56,6 @@ describe('Suite Básica - 10 Testes Principais', () => {
     // ======================
     describe('Cadastro', () => {
         beforeEach(async () => {
-            await driver.pause(1000);
             await HomePage.returnToHome();
             await HomePage.waitForHomeScreen();
         });
@@ -98,7 +93,6 @@ describe('Suite Básica - 10 Testes Principais', () => {
     // ======================
     describe('Formulários', () => {
         beforeEach(async () => {
-            await driver.pause(1000);
             await HomePage.returnToHome();
             await HomePage.waitForHomeScreen();
         });
@@ -110,17 +104,15 @@ describe('Suite Básica - 10 Testes Principais', () => {
             // Clica no botão Active
             const activeButton = await FormsPage.activeButton;
             await activeButton.click();
-            await driver.pause(1500);
-            
             
             const messagePopup = await FormsPage.messagePopup;
+            await messagePopup.waitForDisplayed({ timeout: 3000 });
+            
             const popupText = await messagePopup.getText();
             expect(popupText).to.include('This button is active');
             
-            
             const okButton = await FormsPage.popupOkButton;
             await okButton.click();
-            await driver.pause(500);
         });
 
         it('TC07 - Deve preencher campo de input', async () => {
@@ -151,7 +143,6 @@ describe('Suite Básica - 10 Testes Principais', () => {
     // ======================
     describe('Navegação', () => {
         beforeEach(async () => {
-            await driver.pause(1000);
             await HomePage.returnToHome();
             await HomePage.waitForHomeScreen();
         });
@@ -160,15 +151,22 @@ describe('Suite Básica - 10 Testes Principais', () => {
             // Login
             await HomePage.waitForHomeScreen();
             await HomePage.navigateToLogin();
-            await driver.pause(1000);
+            await LoginPage.waitForLoginScreen();
+            
+            // Voltar para Home
+            await HomePage.returnToHome();
+            await HomePage.waitForHomeScreen();
             
             // Forms
             await HomePage.navigateToForms();
-            await driver.pause(1000);
+            await FormsPage.waitForFormsScreen();
+            
+            // Voltar para Home
+            await HomePage.returnToHome();
+            await HomePage.waitForHomeScreen();
             
             // Swipe
             await HomePage.navigateToSwipe();
-            await driver.pause(1000);
         });
     });
 
@@ -177,7 +175,6 @@ describe('Suite Básica - 10 Testes Principais', () => {
     // ======================
     describe('Interações', () => {
         beforeEach(async () => {
-            await driver.pause(1000);
             await HomePage.returnToHome();
             await HomePage.waitForHomeScreen();
         });
@@ -188,7 +185,7 @@ describe('Suite Básica - 10 Testes Principais', () => {
             
             const inactiveButton = await FormsPage.inactiveButton;
             await inactiveButton.click();
-            await driver.pause(1500);
+            await inactiveButton.waitForDisplayed({ timeout: 3000 });
             
             const isDisplayed = await inactiveButton.isDisplayed();
             expect(isDisplayed).to.be.true;
